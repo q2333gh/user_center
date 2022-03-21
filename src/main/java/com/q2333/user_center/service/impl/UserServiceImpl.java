@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.q2333.user_center.model.domain.User;
 import com.q2333.user_center.service.UserService;
 import com.q2333.user_center.Mapper.UserMapper;
+import lombok.extern.slf4j.XSlf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
@@ -12,6 +13,8 @@ import org.springframework.util.DigestUtils;
 import javax.annotation.Resource;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
 
 /**
  * 用户服务实现类
@@ -21,9 +24,12 @@ import java.util.regex.Pattern;
 
 
 @Service
+@XSlf4j //监控日志
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService{
     @Resource
-    private  UserMapper UserMapper;
+    private  UserMapper userMapper;
+    // 2.加密密码,SALT盐。混淆密码
+    private static final String SALT = "yupi";
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
         // 1.校验非空
@@ -54,7 +60,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return -1;
         }
         // 2.加密密码
-        final String SALT = "yupi";
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
         // 3.插入数据
         User user = new User();
@@ -65,6 +70,39 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return -1;
         }
         return user.getId();
+    }
+    @Override
+    public User doLogin(String userAccount, String userPassword) {
+        // 1.校验非空.账号，密码长度
+        if (StringUtils.isAnyBlank(userAccount, userPassword)) {
+            return null;
+        }
+        if (userAccount.length() < 4) {
+            return null;
+        }
+        if (userPassword.length() < 8 ){
+            return null;
+        }
+        // 账户不能包含特殊字符
+        String validPattern = "\\pP|\\pS|\\s+";
+        Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
+        if (matcher.find()) {
+            return null;
+        }
+        //加密
+        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+        // 查询数据库，用户是否存在
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userAccount", userAccount);
+        queryWrapper.eq("userPassword", encryptPassword);
+        //用户不存在
+        if (user == null){
+            log.info("user login failed,userAccount cant match userPassword");
+            return null;
+        }
+        //3.记录用户的登陆态
+
+        return null;
     }
 }
 
