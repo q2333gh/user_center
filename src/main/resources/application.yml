@@ -1,0 +1,17 @@
+spring:
+  # 项目名
+  application:
+    name: user-center
+
+  # DataSource Config
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/1_q2333
+    username: root
+    password: 123456
+# 端口号
+server:
+  port: 8080
+mybatis-plus:
+  configuration:
+    map-undersco re-to-camel-case: false #关闭mybatis的字段转换:_转为大写
